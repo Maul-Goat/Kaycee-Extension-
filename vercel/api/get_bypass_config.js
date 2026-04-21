@@ -1,4 +1,7 @@
+const { applyCors } = require('../lib/http');
+
 module.exports = async function handler(req, res) {
+  if (applyCors(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ success: false });
 
   const payloadRaw = process.env.BYPASS_PAYLOAD;
