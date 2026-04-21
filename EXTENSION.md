@@ -21,7 +21,7 @@ Endpoint backend yang dipakai extension (base URL sekarang `https://kaycee-exten
 - `POST /log`
 - `GET  /api/analyze`
 - `POST /verify-tg`
-- `POST /get_bypass_config`
+- `POST /get_bypass_config` 
 
-Backend Vercel-nya ada di folder `vercel/` dan routingnya di `vercel.json`.
+Backend Vercel-nya ada di folder `vercel/` dan routingnya di `vercel.json`. //woilahh
 
