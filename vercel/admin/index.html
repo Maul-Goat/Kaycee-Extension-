@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Kaycee Admin</title>
+    <style>
+      :root { color-scheme: dark; }
+      body { margin:0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; background:#07070a; color:#eaeaf0; }
+      .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+      .row { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+      .card { background: rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:16px; padding:16px; }
+      input, button, select { background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.10); color:#fff; border-radius:12px; padding:10px 12px; }
+      button { cursor:pointer; }
+      button.primary { background: linear-gradient(90deg, #25F4EE, #FE2C55); border: none; color:#000; font-weight: 800; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); font-size: 13px; vertical-align: top; }
+      th { text-align:left; color:#a9a9b2; font-weight: 600; }
+      .pill { display:inline-block; padding:2px 8px; border-radius: 999px; font-size: 12px; border:1px solid rgba(255,255,255,0.12); }
+      .pill.bad { border-color: rgba(254,44,85,0.6); color:#ff9fb1; }
+      .pill.ok { border-color: rgba(37,244,238,0.6); color:#9ff7f2; }
+      .muted { color:#a9a9b2; }
+      .small { font-size: 12px; }
+      .split { display:grid; grid-template-columns: 1.6fr 1fr; gap: 12px; }
+      @media (max-width: 980px) { .split { grid-template-columns: 1fr; } }
+      a { color:#25F4EE; text-decoration: none; }
+      code { background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 8px; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="row" style="justify-content: space-between; margin-bottom: 12px;">
+        <div>
+          <div style="font-size: 20px; font-weight: 800;">Kaycee Admin</div>
+          <div class="muted small">Manage users, bans, and logs.</div>
+        </div>
+        <div class="row">
+          <button id="setKeyBtn">Set Admin Key</button>
+          <button class="primary" id="refreshBtn">Refresh</button>
+        </div>
+      </div>
+
+      <div class="split">
+        <div class="card">
+          <div class="row" style="justify-content: space-between;">
+            <div style="font-weight: 700;">Users</div>
+            <div class="muted small">Endpoint: <code>/api/admin/users</code></div>
+          </div>
+          <div style="overflow:auto; margin-top: 10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Status</th>
+                  <th>Device</th>
+                  <th>Last login</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="font-weight: 700; margin-bottom: 8px;">Ban tools</div>
+          <div class="muted small" style="margin-bottom: 10px;">Actions require header <code>X-Admin-Key</code>.</div>
+
+          <div class="row" style="margin-bottom: 10px;">
+            <input id="banUserInput" placeholder="@username" style="flex:1" />
+            <button id="banUserBtn">Ban user</button>
+          </div>
+          <input id="banUserReason" placeholder="Reason (optional)" style="width:100%; margin-bottom: 12px;" />
+
+          <div class="row" style="margin-bottom: 10px;">
+            <input id="banDeviceInput" placeholder="device_id (KC-XXXXX)" style="flex:1" />
+            <button id="banDeviceBtn">Ban device</button>
+          </div>
+          <input id="banDeviceReason" placeholder="Reason (optional)" style="width:100%; margin-bottom: 12px;" />
+
+          <div class="row">
+            <button id="unbanUserBtn">Unban user</button>
+            <button id="unbanDeviceBtn">Unban device</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top: 12px;">
+        <div class="row" style="justify-content: space-between;">
+          <div style="font-weight: 700;">Recent logs</div>
+          <div class="row">
+            <select id="logsLimit">
+              <option value="50">50</option>
+              <option value="100" selected>100</option>
+              <option value="200">200</option>
+            </select>
+          </div>
+        </div>
+        <div style="overflow:auto; margin-top: 10px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User</th>
+                <th>Device</th>
+                <th>Action</th>
+                <th>Details</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody id="logsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="muted small" style="margin-top: 14px;">
+        Tip: base URL backend extension kamu sekarang <code>https://kaycee-extension-6109cjr0o-maul-goats-projects.vercel.app</code>.
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const keyStorage = 'kaycee_admin_key';
+
+      function getKey() { return localStorage.getItem(keyStorage) || ''; }
+      function setKey(k) { localStorage.setItem(keyStorage, k || ''); }
+
+      async function api(path, { method = 'GET', body } = {}) {
+        const headers = { 'Content-Type': 'application/json', 'X-Admin-Key': getKey() };
+        const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+        return res.json();
+      }
+
+      function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      }
+
+      function fmtTime(ts) {
+        if (!ts) return '';
+        try { return new Date(ts).toLocaleString(); } catch { return String(ts); }
+      }
+
+      async function refresh() {
+        const users = await api('/api/admin/users');
+        if (!users.success) {
+          $('usersTbody').innerHTML = `<tr><td colspan="5" class="muted">Unauthorized / error. Set admin key first.</td></tr>`;
+        } else {
+          $('usersTbody').innerHTML = users.users.map(u => {
+            const banned = u.is_banned;
+            return `<tr>
+              <td><div style="font-weight:700">${esc(u.username)}</div><div class="muted small">${esc(u.id)}</div></td>
+              <td>${banned ? `<span class="pill bad">BANNED</span><div class="muted small">${esc(u.ban_reason || '')}</div>` : `<span class="pill ok">OK</span>`}</td>
+              <td><div>${esc(u.device_id || '')}</div></td>
+              <td><div>${esc(fmtTime(u.last_login))}</div></td>
+              <td class="small">
+                <button onclick="banUser('${esc(u.username)}')">Ban</button>
+                <button onclick="unbanUser('${esc(u.username)}')">Unban</button>
+              </td>
+            </tr>`;
+          }).join('');
+        }
+
+        const limit = $('logsLimit').value;
+        const logs = await api('/api/admin/logs?limit=' + encodeURIComponent(limit));
+        if (!logs.success) {
+          $('logsTbody').innerHTML = `<tr><td colspan="6" class="muted">Unauthorized / error.</td></tr>`;
+        } else {
+          $('logsTbody').innerHTML = logs.logs.map(l => `
+            <tr>
+              <td>${esc(fmtTime(l.created_at))}</td>
+              <td>${esc(l.username || '')}</td>
+              <td>${esc(l.user_id || '')}</td>
+              <td>${esc(l.action || '')}</td>
+              <td>${esc(l.details || '')}</td>
+              <td>${esc(l.ip || '')}</td>
+            </tr>
+          `).join('');
+        }
+      }
+
+      async function banUser(username) {
+        const reason = $('banUserReason').value || '';
+        const res = await api('/api/admin/ban/user', { method: 'POST', body: { username, reason } });
+        if (!res.success) alert('Ban failed: ' + (res.error || 'unknown'));
+        await refresh();
+      }
+      async function unbanUser(username) {
+        const res = await api('/api/admin/unban/user', { method: 'POST', body: { username } });
+        if (!res.success) alert('Unban failed: ' + (res.error || 'unknown'));
+        await refresh();
+      }
+      async function banDevice(deviceId) {
+        const reason = $('banDeviceReason').value || '';
+        const res = await api('/api/admin/ban/device', { method: 'POST', body: { device_id: deviceId, reason } });
+        if (!res.success) alert('Ban failed: ' + (res.error || 'unknown'));
+        await refresh();
+      }
+      async function unbanDevice(deviceId) {
+        const res = await api('/api/admin/unban/device', { method: 'POST', body: { device_id: deviceId } });
+        if (!res.success) alert('Unban failed: ' + (res.error || 'unknown'));
+        await refresh();
+      }
+
+      window.banUser = banUser;
+      window.unbanUser = unbanUser;
+
+      $('setKeyBtn').addEventListener('click', () => {
+        const next = prompt('Enter ADMIN_KEY', getKey() ? '********' : '');
+        if (next == null) return;
+        if (next === '********') return;
+        setKey(next);
+        refresh();
+      });
+      $('refreshBtn').addEventListener('click', refresh);
+      $('logsLimit').addEventListener('change', refresh);
+
+      $('banUserBtn').addEventListener('click', () => banUser($('banUserInput').value));
+      $('unbanUserBtn').addEventListener('click', () => unbanUser($('banUserInput').value));
+      $('banDeviceBtn').addEventListener('click', () => banDevice($('banDeviceInput').value));
+      $('unbanDeviceBtn').addEventListener('click', () => unbanDevice($('banDeviceInput').value));
+
+      refresh();
+    </script>
+  </body>
+</html>
+

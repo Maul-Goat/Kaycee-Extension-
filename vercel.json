@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "builds": [
+    { "src": "vercel/api/**/*.js", "use": "@vercel/node" },
+    { "src": "vercel/admin/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "^/admin/?$", "dest": "/vercel/admin/index.html" },
+
+    { "src": "^/login$", "dest": "/vercel/api/login.js" },
+    { "src": "^/register$", "dest": "/vercel/api/register.js" },
+    { "src": "^/check_shield$", "dest": "/vercel/api/check_shield.js" },
+    { "src": "^/log$", "dest": "/vercel/api/log.js" },
+    { "src": "^/verify-tg$", "dest": "/vercel/api/verify-tg.js" },
+    { "src": "^/get_bypass_config$", "dest": "/vercel/api/get_bypass_config.js" },
+
+    { "src": "^/api/analyze$", "dest": "/vercel/api/api/analyze.js" },
+
+    { "src": "^/api/admin/users$", "dest": "/vercel/api/admin/users.js" },
+    { "src": "^/api/admin/logs$", "dest": "/vercel/api/admin/logs.js" },
+    { "src": "^/api/admin/ban/user$", "dest": "/vercel/api/admin/ban/user.js" },
+    { "src": "^/api/admin/unban/user$", "dest": "/vercel/api/admin/unban/user.js" },
+    { "src": "^/api/admin/ban/device$", "dest": "/vercel/api/admin/ban/device.js" },
+    { "src": "^/api/admin/unban/device$", "dest": "/vercel/api/admin/unban/device.js" }
+  ]
+}
+
